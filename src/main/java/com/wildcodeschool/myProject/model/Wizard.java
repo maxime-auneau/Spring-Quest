@@ -1,9 +1,7 @@
 package com.wildcodeschool.myProject.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+
+import jakarta.persistence.*;
 
 import java.sql.Date;
 
@@ -13,13 +11,24 @@ public class Wizard {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private String firstName;
     private String lastName;
     private Date birthday;
     private String birthPlace;
     private String biography;
     private boolean muggle;
+
+    @ManyToOne
+    @JoinColumn(name = "shcool_id")
+    private School school;
+
+    public School getSchool() {
+        return school;
+    }
+
+    public void setSchool(School school) {
+        this.school = school;
+    }
 
     public Wizard() {
     }
@@ -79,8 +88,4 @@ public class Wizard {
     public void setMuggle(boolean muggle) {
         this.muggle = muggle;
     }
-
-    // getters and setters omitted for brevity
 }
-
-

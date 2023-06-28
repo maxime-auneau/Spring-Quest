@@ -1,55 +1,104 @@
 package com.wildcodeschool.myProject.controller;
 
 import com.wildcodeschool.myProject.model.School;
+import com.wildcodeschool.myProject.model.Wizard;
+import com.wildcodeschool.myProject.repository.SchoolRepository;
+import com.wildcodeschool.myProject.repository.WizardRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import com.wildcodeschool.myProject.repository.SchoolRepository;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Controller
 public class SchoolController {
 
     @Autowired
-    private SchoolRepository repository;
+    private SchoolRepository schoolRepository;
 
-    @GetMapping("/school")
-    public String getSchool(Model model, @RequestParam(required = false) Long id) {
-        School school = new School();
-        if (id != null) {
-            Optional<School> optionalSchool = repository.findById(id);
-            if (optionalSchool.isPresent()) {
-                school = optionalSchool.get();
-            }
-        }
-        model.addAttribute("school", school);
+    @Autowired
+    private WizardRepository wizardRepository;
 
-        return "school";
-    }
+    @GetMapping("/")
+    public String getSchools(Model out) {
 
-    @GetMapping("/schools")
-    public String getAll(Model model) {
-        model.addAttribute("schools", repository.findAll());
+        out.addAttribute("schools", schoolRepository.findAll());
 
         return "schools";
     }
 
-    @PostMapping("/school")
-    public String postSchool(@ModelAttribute School school) {
-        repository.save(school);
+    @GetMapping("/school/register")
+    public String inscription(Model out,
+                              @RequestParam Long idSchool) {
 
-        return "redirect:/schools";
+        Optional<School> optionalSchool = schoolRepository.findById(idSchool);
+        School school = new School();
+        if (optionalSchool.isPresent()) {
+            school = optionalSchool.get();
+        }
+        out.addAttribute("school", school);
+        out.addAttribute("allWizards", wizardRepository.findAll());
+
+        // call the method getWizards in School
+        List<Wizard> wizards = new ArrayList<>();
+        Method method = getMethod(school, "getWizards",
+                new Class[]{});
+        if (method != null) {
+            try {
+                wizards = (List<Wizard>) method.invoke(school);
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                e.printStackTrace();
+            }
+        }
+        out.addAttribute("schoolWizards", wizards);
+
+        return "register";
     }
 
-    @GetMapping("/school/delete")
-    public String deleteSchool(@RequestParam Long id) {
-        repository.deleteById(id);
+    @PostMapping("/school/register")
+    public String inscription(@RequestParam Long idSchool,
+                              @RequestParam Long idWizard) {
 
-        return "redirect:/schools";
+        Optional<Wizard> optionalWizard = wizardRepository.findById(idWizard);
+        if (optionalWizard.isPresent()) {
+            Wizard wizard = optionalWizard.get();
+
+            Optional<School> optionalSchool = schoolRepository.findById(idSchool);
+            if (optionalSchool.isPresent()) {
+                School school = optionalSchool.get();
+
+                // call the method setSchool in Wizard
+                Method method = getMethod(wizard, "setSchool",
+                        new Class[]{School.class});
+                if (method != null) {
+                    try {
+                        method.invoke(wizard, school);
+                    } catch (IllegalAccessException | InvocationTargetException e) {
+                        e.printStackTrace();
+                    }
+                }
+                wizardRepository.save(wizard);
+            }
+        }
+
+        return "redirect:/school/register?idSchool=" + idSchool;
+    }
+
+    public Method getMethod(Object obj, String methodName, Class[] args) {
+        Method method;
+        try {
+            method = obj.getClass().getDeclaredMethod(methodName, args);
+            return method;
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

@@ -1,11 +1,9 @@
 package com.wildcodeschool.myProject.model;
 
-// TODO : update this entity
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+
+import java.util.List;
 
 @Entity
 public class School {
@@ -16,6 +14,17 @@ public class School {
     private String name;
     private Long capacity;
     private String country;
+
+    @OneToMany(mappedBy = "school")
+    private List<Wizard> wizards;
+
+    public List<Wizard> getWizards() {
+        return wizards;
+    }
+
+    public void setWizards(List<Wizard> wizards) {
+        this.wizards = wizards;
+    }
 
     public School() {
     }
